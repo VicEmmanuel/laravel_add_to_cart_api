@@ -20,8 +20,11 @@ class ProductsController extends Controller
 
     public function index()
     {
-        $products = Product::all();
-
+        $products = Product::orderBy('created_at', 'DESC')->get();
+        foreach ($products as $product) {
+            // Ensure each post has the full URL for the image
+            $product->photo = url('images/' . $product->photo);
+        }
         return $this->success(
             $products,
             'Fetched all products',
@@ -46,6 +49,7 @@ class ProductsController extends Controller
                 'quantity' => 1,
                 // $product->is_added_to_cart = true
             ]);
+
             // $product->is_added_to_cart = true;
             $cartItem->save();
         }
@@ -134,18 +138,21 @@ class ProductsController extends Controller
      */
     public function store(StoreProductRequest $storeProductRequest)
     {
-        $storeProductRequest->validated($storeProductRequest->all());
-        $photoPath = $storeProductRequest->file('photo')->store('photos');
+//        $storeProductRequest->validated($storeProductRequest->all());
+//        $photoPath = $storeProductRequest->file('photo')->store('photos');
+        $newImageName = uniqid() . $storeProductRequest->photo->extension();
+
+        $storeProductRequest->photo->move(public_path('images'), $newImageName);
         $product = Product::create([
 
             'product_name' => $storeProductRequest->product_name,
             'product_description' => $storeProductRequest->product_description,
-            'photo' => $photoPath,
+            'photo' => $newImageName,
             'price' => $storeProductRequest->price,
             // 'is_added_to_cart' => $storeProductRequest->is_added_to_cart
 
         ]);
-
+        $product->photo = url('images/' . $newImageName);
         return $this->success($product, 'Product Created');
     }
 
